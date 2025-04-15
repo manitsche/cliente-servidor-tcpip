@@ -1,6 +1,8 @@
 import socket
 import threading
 
+import sys
+
 PORT = 42000
 ADDR = 'localhost'
 TIMEOUT = 60
@@ -10,12 +12,26 @@ MAX_NAME_LEN = 10
 clientes = {}  # {nome: conn}
 clientes_lock = threading.Lock()
 
+def listar_clientes():
+    while True:
+        input("\n>> Pressione Enter para ver os clientes conectados...\n")
+        with clientes_lock:
+            if clientes:
+                print("\n[CLIENTES CONECTADOS]")
+                for nome in clientes:
+                    print(f" - {nome}")
+            else:
+                print("\nNenhum cliente conectado.")
+
 def broadcast(remetente, mensagem):
+    texto_formatado = f"<ALL> {remetente}: {mensagem}"
+    print(texto_formatado)
+
     with clientes_lock:
         for nome, conn in clientes.items():
             if nome != remetente:
                 try:
-                    conn.send(f"<ALL> {remetente}: {mensagem}".encode('utf-8'))
+                    conn.send(texto_formatado.encode('utf-8'))
                 except:
                     pass
 
@@ -58,16 +74,13 @@ def tratar_cliente(conn, endereco):
                 break
 
             elif nome:
-                # Sempre trata como mensagem para todos após registro
                 texto = msg
                 if msg.startswith("<ALL>"):
                     texto = msg[5:].strip()
-
-                    texto = texto[:MAX_MSG_LEN]
-                    broadcast(nome, texto)
-                else:
-                    conn.send("<NACK> Nome em uso".encode('utf-8'))
-
+                texto = texto[:MAX_MSG_LEN]
+                broadcast(nome, texto)
+            else:
+                conn.send("<NACK> Nome em uso".encode('utf-8'))
 
     except Exception as e:
         print(f"[ERRO] {endereco}: {e}")
@@ -86,6 +99,9 @@ def iniciar_servidor():
     serv.bind((ADDR, PORT))
     serv.listen()
     print(f"[SERVIDOR] Escutando em {ADDR}:{PORT}")
+
+    # Iniciar thread para listar clientes
+    threading.Thread(target=listar_clientes, daemon=True).start()
 
     try:
         while True:

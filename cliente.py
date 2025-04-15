@@ -1,5 +1,6 @@
 import socket
 import threading
+import sys  # ⬅ necessário para encerrar o cliente
 
 PORT = 42000
 HOST = 'localhost'
@@ -9,10 +10,15 @@ def receber_mensagens(sock):
         try:
             dados = sock.recv(4096)
             if not dados:
+                print("\n[INFO] Conexão encerrada pelo servidor.")
                 break
             print(f"\n{dados.decode()}")
         except:
+            print("\n[ERRO] Conexão com o servidor perdida.")
             break
+
+    sock.close()
+    sys.exit(0) 
 
 def registrar_nome(sock):
     while True:
