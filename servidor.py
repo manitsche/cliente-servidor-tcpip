@@ -58,11 +58,16 @@ def tratar_cliente(conn, endereco):
                 break
 
             elif nome:
-                # Responde ao cliente com a mesma mensagem
-                resposta = msg[:MAX_MSG_LEN]
-                conn.send(f"<ACK> {resposta}".encode('utf-8'))
-            else:
-                conn.send("<NACK> Nome em uso".encode('utf-8'))
+                # Sempre trata como mensagem para todos após registro
+                texto = msg
+                if msg.startswith("<ALL>"):
+                    texto = msg[5:].strip()
+
+                    texto = texto[:MAX_MSG_LEN]
+                    broadcast(nome, texto)
+                else:
+                    conn.send("<NACK> Nome em uso".encode('utf-8'))
+
 
     except Exception as e:
         print(f"[ERRO] {endereco}: {e}")
